@@ -1,0 +1,14 @@
+# Keil build outputs
+/MDK-ARM/STM32project/
+/MDK-ARM/DebugConfig/
+/MDK-ARM/*.lst
+/MDK-ARM/*.uvoptx
+/MDK-ARM/*.uvguix.*
+
+# Editor and operating-system files
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
