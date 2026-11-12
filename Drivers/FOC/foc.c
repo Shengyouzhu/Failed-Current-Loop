@@ -133,7 +133,7 @@ void FOC_Init(void)
     /* 参考 HelloWord 惯性模式：Kp=0.10、Ki=0，仅使用比例控制。 */
     SpeedLoop_Init(&speed_loop, 0.10f, 0.0f, FOC_VOLTAGE_LIMIT);
     /* 位置 P：Kp=2.0；输出的目标速度限制为 ±20 rad/s。 */
-    PositionLoop_Init(&position_loop, 2.0f, 20.0f);
+    PositionLoop_Init(&position_loop, 25.0f, 20.0f);
     control_mode = FOC_MODE_SPEED;
     target_voltage = 0.7f;
     target_speed = 20.0f;

@@ -169,8 +169,10 @@ void MotorTask(void *argument)
         if (FOC_Update(now_ms))
         {
             FOC_GetFeedback(&feedback);
-            Roller(&feedback, dt);
-
+//            Roller(&feedback, dt);
+//							Song_Control(&feedback);
+							Volume_Control(&feedback);
+//						Snap_fastener(&feedback);
             if (DisplayTask_Handler != NULL)
                 xTaskNotifyGive(DisplayTask_Handler);
         }

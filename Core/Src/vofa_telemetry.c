@@ -1,5 +1,6 @@
 #include "vofa_telemetry.h"
 #include "foc.h"
+#include "haptic.h"
 #include "usart.h"
 
 typedef struct
@@ -65,6 +66,9 @@ void VOFA_TelemetrySend(void)
     tx_frame.channel[10] = (float)feedback.sensor_status;
     tx_frame.channel[11] = (float)feedback.sensor_error;
     tx_frame.channel[12] = (float)feedback.sensor_fault_stage;
+    tx_frame.channel[13] = (float)haptic_volume;
+    tx_frame.channel[14] = (float)haptic_next_song_count;
+    tx_frame.channel[15] = (float)haptic_previous_song_count;
 		
     tx_frame.channel[0] = feedback.speed_reference * 9.5492966f;
     tx_frame.channel[1] *= 9.5492966f;

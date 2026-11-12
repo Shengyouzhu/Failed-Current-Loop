@@ -1,7 +1,7 @@
 #pragma once
 #include "main.h"
 
-/* USART1 460800 8N1; VOFA JustFloat; 13 channels every 2 ms.
+/* USART1 460800 8N1; VOFA JustFloat; 16 channels every 2 ms.
  * I0 effective target speed [rpm]     I1 actual speed [rpm]
  * I2 applied Uq [V]                  I3 target position [turns]
  * I4 actual position [turns]         I5 position error [turns, position mode only]
@@ -11,10 +11,13 @@
  * I10 last sensor HAL status: 0 OK, 1 ERROR, 2 BUSY, 3 TIMEOUT
  * I11 latched I2C error bitmask: 1 BERR, 2 ARLO, 4 AF/NACK, 32 TIMEOUT
  * I12 failure stage: 0 none, 1 first read, 2 after alignment, 3 running
+ * I13 volume [%], initial 50; updated by Volume_Control
+ * I14 next-song event count          I15 previous-song event count
+ * Event counts persist across telemetry frames; inactive modes do not update them.
  * Position values are absolute, unwrapped mechanical turns.
  */
 #define VOFA_TELEMETRY_PERIOD_MS 2U
-#define VOFA_TELEMETRY_CHANNELS 13U
+#define VOFA_TELEMETRY_CHANNELS 16U
 
 HAL_StatusTypeDef VOFA_TelemetryInit(void);
 void VOFA_TelemetrySend(void);
