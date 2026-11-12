@@ -19,7 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
-#include "adc.h"
 #include "i2c.h"
 #include "tim.h"
 #include "usart.h"
@@ -29,7 +28,6 @@
 /* USER CODE BEGIN Includes */
 #include "oled.h"
 #include "foc.h"
-#include "CurrentLoop.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -107,14 +105,12 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_ADC1_Init();
   MX_I2C2_Init();
   MX_TIM1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
 	OLED_Init();
-	FOC_Init();
 
 
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);

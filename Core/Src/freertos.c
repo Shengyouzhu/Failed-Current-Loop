@@ -26,10 +26,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "oled.h"
-#include "AS5600.h"
 #include "FOC.h"
-#include "CurrentLoop.h"
 #include "vofa_telemetry.h"
+#include "haptic.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,12 +39,12 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 void MotorTask(void *argument);
-void CommTask(void *argument);
 void DisplayTask(void *argument);
+void CommTask(void *argument);
 
 TaskHandle_t MotorTask_Handler;   //������
-TaskHandle_t CommTask_Handler;
 TaskHandle_t DisplayTask_Handler;
+TaskHandle_t CommTask_Handler;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -55,17 +54,9 @@ TaskHandle_t DisplayTask_Handler;
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-float angle;
-volatile float theta_e;
-float Motor_MM;
-/* 0=boot, 1=current calibration, 2=angle alignment, 3=closed loop, 4=fault. */
-volatile uint32_t motor_control_state;
-volatile uint32_t motor_sensor_fail_count;
-volatile uint32_t motor_last_angle_adc_count;
-
 volatile BaseType_t motor_create;
-volatile BaseType_t comm_create;
 volatile BaseType_t display_create;
+volatile BaseType_t comm_create;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -141,9 +132,10 @@ void StartDefaultTask(void *argument)
 			MotorTask, "task1", 128, NULL, 30, &MotorTask_Handler
 	);
 
-	comm_create = xTaskCreate(
-			CommTask, "task2", 256, NULL, 22, &CommTask_Handler
-	);
+
+    comm_create = xTaskCreate(
+        CommTask, "comm", 256, NULL, 22, &CommTask_Handler
+    );
 
 	display_create = xTaskCreate(
 			DisplayTask, "task3", 128, NULL, 18, &DisplayTask_Handler
@@ -160,74 +152,27 @@ void StartDefaultTask(void *argument)
 
 void MotorTask(void *argument)
 {
-    uint8_t sensor_ok = 0;
-    TickType_t calibration_start;    //启动时间
-    TickType_t previous_wake_time;	 //上一次运行时间
+    FOC_Feedback_t feedback;
+    TickType_t previous_wake_time = xTaskGetTickCount();
+    uint32_t last_ms = HAL_GetTick();
 
-    motor_control_state = 1U;
-    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
-    FOC_SetAlignVoltage(0.0f, 0.0f);
-    vTaskDelay(pdMS_TO_TICKS(100));
+    FOC_Start(last_ms);
+    FOC_SetControlMode(FOC_MODE_SPEED);
+    FOC_SetTargetSpeed(0.0f);
 
-    CurrentSense_BeginCalibration();
-    CurrentSense_Start();
-    calibration_start = xTaskGetTickCount();
-    while (!motor_current.offset_ready && (xTaskGetTickCount() - calibration_start) < pdMS_TO_TICKS(100))//等待电流校准
+    for (;;)
     {
-        vTaskDelay(pdMS_TO_TICKS(1));
-    }
+        uint32_t now_ms = HAL_GetTick();
+        float dt = (now_ms - last_ms) * 0.001f;
+        last_ms = now_ms;
 
-    if (motor_current.offset_ready)//电流校准完毕后校准角度
-    {
-        sensor_ok = (as5600_read_byte(&angle, &Motor_MM, 0.002f) == HAL_OK);
-        if (!sensor_ok) motor_sensor_fail_count++;
-        if (sensor_ok)
+        if (FOC_Update(now_ms))
         {
-            motor_control_state = 2U;
-            FOC_SetAlignVoltage(0.7f, 0.0f);
-            vTaskDelay(pdMS_TO_TICKS(3000));
-            sensor_ok = (as5600_read_byte(&angle, &Motor_MM, 0.5f) == HAL_OK);
-            if (!sensor_ok) motor_sensor_fail_count++;
-            if (sensor_ok)
-            {
-                FOC_CalibrateZero(angle);
-                theta_e = FOC_GetElectricalAngle(angle);
-                motor_last_angle_adc_count = motor_current.sample_count;
-                FOC_SetAlignVoltage(0.0f, 0.0f);
-                CurrentLoop_SetTarget(0.0f, 0.2f);
-                CurrentLoop_SetEnabled(1);
-                motor_control_state = 3U;
-            }
-        }
-    }
+            FOC_GetFeedback(&feedback);
+            Roller(&feedback, dt);
 
-    if (!sensor_ok)
-    {
-        motor_control_state = 4U;
-        CurrentLoop_SetEnabled(0);
-        CurrentLoop_SetTarget(0.0f, 0.0f);
-        FOC_SetAlignVoltage(0.0f, 0.0f);
-        HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
-    }
-
-    previous_wake_time = xTaskGetTickCount();
-    while (1)
-    {
-        if (sensor_ok && as5600_read_byte(&angle, &Motor_MM, 0.001f) == HAL_OK)  //执行控制
-        {
-            theta_e = FOC_GetElectricalAngle(angle);
-            motor_last_angle_adc_count = motor_current.sample_count;
-            xTaskNotifyGive(DisplayTask_Handler);
-        }
-        else if (sensor_ok)       //异常断开电机
-        {
-            sensor_ok = 0;
-            motor_sensor_fail_count++;
-            motor_control_state = 4U;
-            CurrentLoop_SetEnabled(0);
-            CurrentLoop_SetTarget(0.0f, 0.0f);
-            FOC_SetAlignVoltage(0.0f, 0.0f);
-            HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
+            if (DisplayTask_Handler != NULL)
+                xTaskNotifyGive(DisplayTask_Handler);
         }
 
         vTaskDelayUntil(&previous_wake_time, pdMS_TO_TICKS(1));
@@ -235,30 +180,8 @@ void MotorTask(void *argument)
 }
 
 
-
-
-void CommTask(void *argument)
-{
-    TickType_t previous_wake_time = xTaskGetTickCount();
-
-    if (VOFA_TelemetryInit() != HAL_OK)
-    {
-        for (;;)
-            vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-
-    for (;;)
-    {
-        VOFA_TelemetrySend();
-        vTaskDelayUntil(&previous_wake_time,
-                        pdMS_TO_TICKS(VOFA_TELEMETRY_PERIOD_MS));
-    }
-}
-
-
-
-
 void DisplayTask(void *argument){
+    FOC_Feedback_t feedback;
 	OLED_Print(0, 0, "FOC: RUNNING");
 	OLED_Print(0, 1, "Angle:");
 	OLED_Print(0, 2, "RPM:");
@@ -266,17 +189,35 @@ void DisplayTask(void *argument){
 	OLED_Update();
 	while(1){
 		ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        FOC_GetFeedback(&feedback);
 		OLED_Print(0, 1, "Angle:");
-		OLED_PrintFixed(7, 1,(uint16_t)(angle*100/3.1415926f), 2);
+		OLED_PrintFixed(7, 1,(uint16_t)(feedback.mechanical_angle*100/3.1415926f), 2);
 		OLED_Print(0, 2, "RPM:");
-		OLED_PrintFixed(5, 2,(uint16_t)(Motor_MM*100), 2);
+		OLED_PrintFixed(5, 2,(uint16_t)(feedback.mechanical_speed*100), 2);
 		OLED_Print(0, 3, "Theta:");
-		OLED_PrintFixed(7, 3,(uint16_t)(theta_e*100), 2);
+		OLED_PrintFixed(7, 3,(uint16_t)(feedback.electrical_angle*100), 2);
 		OLED_Update();
 		vTaskDelay(100);
 	}
 }
 
+
+
+void CommTask(void *argument)
+{
+    TickType_t previous_wake_time = xTaskGetTickCount();
+    if (VOFA_TelemetryInit() != HAL_OK)
+    {
+        vofa_errors++;
+        vTaskDelete(NULL);
+        return;
+    }
+    for (;;)
+    {
+        VOFA_TelemetrySend();
+        vTaskDelayUntil(&previous_wake_time, pdMS_TO_TICKS(VOFA_TELEMETRY_PERIOD_MS));
+    }
+}
 
 /* USER CODE END Application */
 

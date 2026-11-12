@@ -410,11 +410,6 @@
               <FilePath>../Core/Src/freertos.c</FilePath>
             </File>
             <File>
-              <FileName>adc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/Src/adc.c</FilePath>
-            </File>
-            <File>
               <FileName>i2c.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/i2c.c</FilePath>
@@ -458,16 +453,6 @@
               <FileName>stm32f4xx_hal_tim_ex.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f4xx_hal_adc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c</FilePath>
-            </File>
-            <File>
-              <FileName>stm32f4xx_hal_adc_ex.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c</FilePath>
             </File>
             <File>
               <FileName>stm32f4xx_hal_rcc.c</FileName>
@@ -630,14 +615,24 @@
               <FilePath>..\Drivers\Driver\oled_font.c</FilePath>
             </File>
             <File>
+              <FileName>vofa_telemetry.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\vofa_telemetry.c</FilePath>
+            </File>
+            <File>
               <FileName>AS5600.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Drivers\Driver\AS5600.c</FilePath>
             </File>
             <File>
-              <FileName>vofa_telemetry.c</FileName>
+              <FileName>Haptic.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Core\Src\vofa_telemetry.c</FilePath>
+              <FilePath>..\Drivers\Driver\Haptic.c</FilePath>
+            </File>
+            <File>
+              <FileName>Haptic.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Drivers\Driver\Haptic.h</FilePath>
             </File>
           </Files>
         </Group>
@@ -675,14 +670,14 @@
               <FilePath>..\Drivers\FOC\pid.h</FilePath>
             </File>
             <File>
-              <FileName>CurrentLoop.c</FileName>
+              <FileName>SpeedLoop.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Drivers\FOC\CurrentLoop.c</FilePath>
+              <FilePath>..\Drivers\FOC\SpeedLoop.c</FilePath>
             </File>
             <File>
-              <FileName>CurrentLoop.h</FileName>
+              <FileName>SpeedLoop.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Drivers\FOC\CurrentLoop.h</FilePath>
+              <FilePath>..\Drivers\FOC\SpeedLoop.h</FilePath>
             </File>
             <File>
               <FileName>PositionLoop.c</FileName>
